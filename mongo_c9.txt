@@ -1,0 +1,21 @@
+sudo apt-get install -y mongodb-org
+
+$ mkdir data
+$ echo 'mongod --bind_ip=$IP --dbpath=data --nojournal --rest "$@"' > mongod
+$ chmod a+x mongod
+
+$ ./mongod
+--------------------
+To repair
+
+mongod --dbpath /data/db --repair
+--------------------------------------
+
+ db.createCollection("tweets");
+ db.createCollection("userinfo");
+ 
+ db.userinfo.insert({"_id":1,"name":"admin","loginid":"admin","pw":"123","isactive":1,"role":"admin"});
+ db.userinfo.insert({"_id":2,"name":"user1","loginid":"user1","pw":"123","isactive":1});
+ db.userinfo.insert({"_id":3,"name":"user2","loginid":"user2","pw":"123","isactive":1});
+ db.userinfo.insert({"_id":4,"name":"user3","loginid":"user3","pw":"123","isactive":1});
+ db.userinfo.insert({"_id":5,"name":"user4","loginid":"user4","pw":"123","isactive":1});

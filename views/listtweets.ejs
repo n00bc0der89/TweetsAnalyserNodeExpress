@@ -1,0 +1,212 @@
+<html>
+    <script type="text/javascript" src="../node_modules/ejs/ejs.js"></script>
+   <script type = "text/javascript" 
+         src = "https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <h1>Welcome <%=user%></h1>
+        <div style="float:right">
+            <form action="logout">
+            <input type="submit" id="logout" name="LogOut" value = "LogOut"/>
+            </form>
+        </div>
+    <div style="width: 30%; height: 50%;float:left;">
+    <br/>
+   
+       <table border=0>
+        
+        <tr>
+        <td>Message to Send:</td> 
+        <td><textarea id="tweetmsg" cols="30" rows="3" maxlength="140" placeholder="140 characters allowed"></textarea></td>
+        </tr>
+        <tr>
+        <td><input type='button' value='Post Message' id="posttweet"/></td>
+        </tr>
+        </table>
+        <br/>
+        <br/>
+        <table border=1>
+        <tr>
+        <td>Agent:</td> 
+        <td> <%= user%></td>
+        </tr>
+        <tr>
+        <td>Total Tweets assigned:</td> 
+        <td> <%= total%></td>
+        </tr>
+        <tr>
+        <td>Total Tweets streamed:</td> 
+        <td> <%= alltweets%></td>
+        </tr>
+        <tr>
+        <td>Tweets Replied :</td>
+        <td><%=repliedcount%></td>
+        </tr>
+         <tr>
+        <td>Positive Tweets:</td>
+        <td><%=positivescore%></td>
+        </tr>
+         <tr>
+        <td>Negative Tweets:</td>
+        <td><%=negativescore%></td>
+        </tr>
+        </table>
+   
+    </div>
+    <div>
+        <form action="refreshTweets">
+        <input type="submit" name=<%=user%> value="Refresh" id="btnRefresh"/>
+        </form></div>
+             <div id="res"></div>
+            
+               <div id="populate" style="width: 70%;float:right;">                 
+            <% if (tweetcollect.length > 0) { 
+            for(var t = 0 ; t < tweetcollect.length; t++)
+            {
+                %>
+                      <table border=0 style="border:1px solid red;">
+                        <tr>
+                            <td> <input type='checkbox' id='tweetid' name='tweetid' value=<%= tweetcollect[t].id %>|<%= tweetcollect[t].uhandle %>></td>
+                            <td>Tweet at: </td>
+                             <td> <%= tweetcollect[t].created_at %> </td>
+                        </tr>
+                       <!-- <tr>
+                            <td></td>
+                             <td>Tweet Id to Reply: </td>
+                             <td> <%= tweetcollect[t].id %> </td>
+                        </tr>-->
+                        <tr>
+                            <td></td>
+                             <td>User Handle: </td>
+                             <td> <%= tweetcollect[t].uhandle %> </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                             <td>Message: </td>
+                             <td> <%= tweetcollect[t].text %> </td>
+                        </tr>
+                         <tr>
+                            <td></td>
+                             <td>Source: </td>
+                             <td> <%= tweetcollect[t].sourcetype %> </td>
+                        </tr>
+                         <tr>
+                            <td></td>
+                             <td>Sentiment: </td>
+                             <td><a title=<%= tweetcollect[t].tooltip%>><img alt="Smiley face"   width="42" height="42" src= <%= tweetcollect[t].sentiment %>> </a></td>
+                        </tr>
+                         <tr>
+                            <td></td>
+                             <td>Sentiment Score: </td>
+                             <td><%= tweetcollect[t].sentimentscore %> </td>
+                        </tr>
+                         <tr>
+                            <td></td>
+                             <td>Tweet Replied: </td>
+                             <% if (tweetcollect[t].replied == 1) {  %>
+                             <td>Yes </td>
+                             <% } else { %>
+                              <td>No </td>
+                             <% } %>
+                        </tr>
+                    </table><br/>
+        <%
+    }
+     } %>
+        
+            
+        </div> 
+
+</html>
+
+    <script type = "text/javascript">
+
+   // var ev = new EventSource('/tweetflow');
+   
+       $('#posttweet').click(function(){
+         var checkedtweets=  $("#populate").find("input:checked");
+        var tweetmsg = $("#tweetmsg").val();
+        
+        for(var elem in checkedtweets)
+        {
+            var e = checkedtweets[elem];
+            var tweetid = $(e).val();
+            
+        var tid = tweetid.split('|')[0];
+        var thandle = tweetid.split('|')[1];
+       
+          $.ajax(
+            {
+                url: "postdata",
+                data:{"Uid": tid,"Uhandle": thandle,"tweetpost":tweetmsg},
+                success: function(result){
+                    var res = "Tweet Posted Successfully !!!";
+                    $("#res").html(res);
+        }})
+        }
+          
+       });
+       
+ 
+  /*  ev.onmessage = function(result) {
+       // document.getElementById("clock").innerHTML += result.data
+       
+       var htmlstring = "";
+       var shtmlstr = "";
+       var jsonstring = result.data;
+       
+        if(jsonstring != "")
+        {
+       
+        var tweetobj = $.parseJSON(jsonstring);
+        
+        for(var i=0; i < tweetobj["tweetcollect"].length; i++)
+        {
+         shtmlstr = shtmlstr.concat("<table border=0 style='border:1px solid red;'> <tr>" +
+                        "<td> <input type='checkbox' id='tweetid' name='tweetid' value='"+ tweetobj["tweetcollect"][i].id + "|" + tweetobj["tweetcollect"][i].uhandle + "' </td>" +
+                        "<td>Tweet at: </td>" +
+                        "<td>"+ tweetobj["tweetcollect"][i].created_at +"</td>" +
+                        "</tr>"+
+                        "<tr>"+
+                        "<td></td>"+
+                        "<td>User Handle: </td>"+
+                        "<td>"+tweetobj["tweetcollect"][i].uhandle+"</td>" + 
+                        "</tr>"+
+                        "<tr>"+
+                        "<td></td>"+
+                        "<td>Message: </td>"+
+                        "<td>"+tweetobj["tweetcollect"][i].text +"</td>"+
+                        "</tr>"+
+                        "<tr>"+
+                        "<td></td>"+
+                        "<td>Source: </td>"+
+                        "<td>"+ tweetobj["tweetcollect"][i].sourcetype +"</td>"+
+                        "</tr>"+
+                        "<tr>"+
+                        "<td></td>"+
+                        "<td>Sentiment: </td>"+
+                        "<td><a title='" + tweetobj["tweetcollect"][i].tooltip +"'> <img alt='Smiley face' width='42' height='42' src='"+ tweetobj["tweetcollect"][i].sentiment +"' </a></td>" +
+                        "</tr>"+
+                        "<tr>"+
+                        "<td></td>"+
+                        "<td>Sentiment Score: </td>"+
+                        "<td>" + tweetobj["tweetcollect"][i].sentimentscore +"</td>" +
+                        "</tr></table><br/>");
+        }
+      
+       $("#populate").prepend(shtmlstr);
+       $("#postres").html(tweetobj["total"]);
+        }
+    }
+*/
+     /*  $("#btnRefresh").click(function()
+       {
+           $.ajax(
+            {
+                url: "refreshTweets",
+                success: function(result){
+                  alert(result);
+            }
+                
+            });
+       }); */
+       
+      </script> 

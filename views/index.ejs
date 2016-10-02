@@ -1,0 +1,157 @@
+<html>
+    <head>
+    <script type="text/javascript" src="../node_modules/ejs/ejs.js"></script>
+   <script type = "text/javascript" 
+         src = "https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCD6FFAPbvxB1-OWHX4iOI-XiCt_FpKBno&libraries=visualization">
+    </script>
+     <style>
+     #map {
+       height: 100%;
+       width: 68%;
+      }
+    </style>
+         </head>
+    <h1>Welcome to my Page</h1>
+     <div style="float:right">
+            <form action="logout">
+            <input type="submit" id="logout" name="LogOut" value = "LogOut"/>
+            </form>
+    </div>
+    <body>
+    <div style="width: 900px;margin-left: auto;">
+        <button id="showmap">Show Maps</button><br/>
+    </div>
+    
+    <div  style="float:right" id="tweetflag">
+    </div>
+    
+    <div style="width: 30%; height: 25%;float:left; border:solid black;">
+        <!--<input type="button" id="clickme" value="Click"/> -->
+
+        <input type="checkbox" id="tweetapi" name="tweetapi" value="true" checked> Twitter Source <br/>
+        <input type="checkbox" id="fbapi" name="fbapi" value="true"> Facebook Source <br/>
+        <br/>
+        Keyword: <input type='text' name='tweetreq' id="tweettext"/>
+        <input type='submit' value='Start Streaming' id="startstream"/><br/><br/>
+        <input type='button' value='Stop Streaming' id="stopstream"/>
+        <div id="showtweet"></div>
+    </div> 
+        
+        <div style="width: 900px;margin-left: auto;">
+            <div id="postres"><h2><%= status %></h2></div>
+            </div>
+            
+             <div id="map" style="float:right"></div>
+             
+  
+             </body>
+
+</html>
+
+    <script type = "text/javascript">
+    
+     $('#startstream').click(function(){
+       
+          $.ajax(
+            {
+                url: "gettweets",
+                type:"post",
+               data: { tweetreq: $("#tweettext").val(), tweetapi : $("#tweetapi").val(), fbapi: $("#fbapi").val()} ,
+                success: function(result){
+                 $("#postres").html(result);   
+        }});
+          
+       });
+    
+        $('#stopstream').click(function(){
+       
+          $.ajax(
+            {
+                url: "stopstream",
+                success: function(result){
+                    //alert($("#postres"));
+                    var res = "Streaming Stopped !!!";
+                    $("#postres").html(res);
+        }});
+          
+       });
+       
+       $('#showmap').click(function(){
+           
+            $.ajax(
+            {
+                url: "callmaps",
+                success: function(pos)
+                   {
+                  var visiblehtml = "<img alt='Positive tweets' width='30' height='30' src='http://maps.google.com/mapfiles/ms/icons/green-dot.png'> - Positive Tweets <img alt='Negative tweets' width='30' height='30' src='http://maps.google.com/mapfiles/ms/icons/red-dot.png'> - Negative Tweets";
+                  var arr = pos;
+                   initMap(arr); 
+                   $("#tweetflag").html(visiblehtml);
+                   }
+        });
+           
+         var map;
+        
+          function initMap(dataarray) {
+            
+            map = new google.maps.Map(document.getElementById('map'), {
+              zoom: 4,
+              center: {lat: 23.6421398, lng: 79.0239249}
+            });
+            
+            var infowindow = new google.maps.InfoWindow({maxWidth: 200});
+
+            for(var o in dataarray)
+            {
+            /*heatmap = new google.maps.visualization.HeatmapLayer({
+              data: new google.maps.LatLng(dataarray[o].lat, dataarray[o].lng),
+             //data: dataarray,
+              map: map
+            });*/
+           if(dataarray[o].sentiment > 0) //Positive Sentiments
+           {
+               
+               var  marker = new google.maps.Marker({
+                    position: new google.maps.LatLng(dataarray[o].lat, dataarray[o].lng),
+                    map: map,
+                    icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                    contentString: dataarray[o].tweet
+                  });
+                  
+                  marker.addListener('click', function() {
+                       infowindow.setContent(this.contentString);
+                       infowindow.open(map, this);
+                       map.setCenter(this.getPosition());
+                    });
+           }
+           else if(dataarray[o].sentiment < 0) //Negative Sentiments
+           {
+    
+               var  marker = new google.maps.Marker({
+                    position: new google.maps.LatLng(dataarray[o].lat, dataarray[o].lng),
+                    map: map,
+                    icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                    contentString: dataarray[o].tweet
+                  });
+                  
+                  marker.addListener('click', function() {
+                       infowindow.setContent(this.contentString);
+                       infowindow.open(map, this);
+                       map.setCenter(this.getPosition());
+                    });
+           }
+        /*  else{
+                marker = new google.maps.Marker({
+                    position: new google.maps.LatLng(dataarray[o].lat, dataarray[o].lng),
+                    map: map,
+                    icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                  });
+           }*/
+                  
+            }
+          }
+    
+           
+       });
+      </script> 

@@ -1,0 +1,89 @@
+<html>
+<head>    
+ <script type = "text/javascript" src = "https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+ <style>
+   tr > td
+    {
+      padding-bottom: 0.3em;
+    }
+ </style>
+</head>
+<%- include menu.ejs%>
+<body>
+    
+    <div style="float:right">
+            <form action="logout">
+            <input type="submit" id="logout" name="LogOut" value = "LogOut"/>
+            </form>
+    </div>
+        
+    <h2>Dashboard</h2>
+    
+    <div style="border: solid black;height:80%">
+    
+    <div style="margin-left:40%"> <h2>Complete Details </h2></div>
+    
+    <table border = 1 style="margin-left:40%">
+        <tr>
+            <td>Total tweets streamed</td>
+            <td><%=total%></td>
+        </tr>
+         <tr>
+            <td>Total tweets replied</td>
+            <td><%=repliedcount%></td>
+        </tr>
+        <tr>
+            <td>Total positive tweets</td>
+            <td><%=positivescore%></td>
+        </tr>
+         <tr>
+            <td>Total negative tweets</td>
+            <td><%=negativescore%></td>
+        </tr>
+         <tr>
+            <td>Total agents</td>
+            <td><%=agentcount.length%></td>
+        </tr>
+    </table>
+    
+    <div style="margin-left:40%"> <h2>Agent Details </h2></div>
+    <% 
+    if (agentcount.length > 0) 
+    {
+        for(var i = 0 ; i <  agentcount.length ; i++)
+        {
+    %>
+    <div id="container" <%=i%> style="margin-left:70px;display: inline-block; margin-top:20px" >
+        <table border = 1>
+             <tr>
+                <td>Agent</td>
+                <td><%=agentcount[i].agentname%></td>
+            </tr>
+            <tr>
+                <td>Total tweets assigned</td>
+                <td><%=agentcount[i].agenttotal%></td>
+            </tr>
+            <tr>
+                <td>Total tweets replied</td>
+                <td><%=agentcount[i].agentrepliedcount%></td>
+            </tr>
+            <tr>
+                <td>Total Positive tweets</td>
+                <td><%=agentcount[i].agentpositivescore%></td>
+            </tr>
+            <tr>
+                <td>Total Negative tweets</td>
+                <td><%=agentcount[i].agentnegativescore%></td>
+            </tr>
+            
+            
+        </table>
+    </div>
+    <%
+        }
+    }
+    %>
+    </div>
+</body>
+    
+</html>

@@ -46,6 +46,16 @@ app.get("/",function(req,res){
 	res.render("login");
 });
 
+app.get("/admin",function(req,res){
+    res.render("index"); 
+    
+});
+
+app.get("/showmap",function(req,res){
+    
+    res.render("maps"); 
+    
+});
 /// ************************************** SSE   *******************************///
  /* app.get("/tweetflow",function(req, res) {
     const client = SSE(req, res,{'retry':10000});
@@ -140,8 +150,8 @@ app.post("/loginaction",function(req,res){
                       console.log("Role" + result[0].role);
                       if(result[0].role == "admin") 
                       {
-                        var data = {"status": "","geo":[]}
-               	        res.render("index",data);
+                    
+               	        res.render("index");
                       }
                       else
                       {
@@ -182,8 +192,7 @@ app.post("/loginaction",function(req,res){
 
 /***********    Get all message function      *************/
 
-var getmessage = function(tweettable,db,res,req)
-{
+var getmessage = function(tweettable,db,res,req){
     var tweetobj = {};
     tweetobj['user.loginid'] =  req.session.user.loginid;
     tweetobj['user.pw'] = req.session.user.pw;
@@ -296,10 +305,9 @@ app.get("/refreshTweets",function(req,res){
 });
 
 app.get("/stopstream",function(req, res) {
+    
     stream.stop();
-    console.log("Streaming stopped");
-    var data = {"status":"Streaming Stopped !!!","geo":[]};
-    res.render("index",data);
+    res.send("Streaming Stopped for keyword: " + req.session.searchTweet);
     
 });
 
@@ -309,6 +317,7 @@ app.post('/gettweets',function(req,res){
 	var fromtweet = req.body.tweetapi;
 	var fromfb = req.body.fbapi;
 	
+	req.session.searchTweet = tweet;
  //   const client = SSE(req,res);
     
 	if(fromtweet == "true")
@@ -317,6 +326,10 @@ app.post('/gettweets',function(req,res){
 
        stream = T.stream('statuses/filter', { track: tweet, language: 'en' })
  
+     stream.on('disconnect', function (disconnectMessage) {
+            console.log(disconnectMessage);
+        })
+     
         stream.on('tweet', function (tweet) {
             
         //var coll = data.statuses;
@@ -324,7 +337,7 @@ app.post('/gettweets',function(req,res){
         var msg = {};
        
             var eachc = tweet;
-          console.log(JSON.stringify(eachc));
+          //console.log(JSON.stringify(eachc));
           
             var obj = {};
             var sentimentpath = '';
@@ -370,7 +383,7 @@ app.post('/gettweets',function(req,res){
             geo.find(eachc.user.location, function(err, result){
                 
                 var robj = result ;
-                console.log("O: " + robj);
+               // console.log("O: " + robj);
                 
                if(robj != undefined &&  robj != "")
                {
@@ -408,7 +421,7 @@ app.post('/gettweets',function(req,res){
                         
                     //Insert tweet obj      
                     tweettable.insert(obj,function(err,insertres){
-                       console.log("Inserted doc"); 
+                     //  console.log("Inserted doc"); 
                       
                         db.close();
                     });
@@ -423,7 +436,7 @@ app.post('/gettweets',function(req,res){
             });
         
         });
-         res.send("Streaming Started ...");
+         res.send("Streaming Started for keyword - " + req.session.searchTweet);
         
 	}
 	
@@ -508,4 +521,132 @@ app.get("/callmaps",function(req,res){
                 }
      });
 });
+
+app.get("/showagents",function(req,res){
+// Get all the tweets streamed with each agent tweets assigned and sentiment scores.
+
+  MongoClient.connect(mongourl, function (err, db) {
+      
+      if (err) {
+        console.log('Unable to connect to the mongoDB server. Error:', err);
+      } 
+      
+       var tweettable = db.collection('tweets');
+       var usertable = db.collection('userinfo');
+       var allagents = [];
+       
+      tweettable.find().toArray(function(err,tres){
+
+                tweettable.find({"sentimentscore": {$gt: 0}}).count(function(err,pres){
+            
+                    tweettable.find({"sentimentscore": {$lt: 0}}).count(function(err,nres){
+                 
+                        tweettable.find({"replied": 1}).count(function(err,rres){
+                            
+                            usertable.find({ "role": { $ne :"admin"}}).toArray(function(err,ares){
+                                
+                                function getagentDetails(i){
+                                    
+                                    if(i < ares.length)
+                                    {
+                                        var userobj = ares[i];
+                                       // console.log("User: " + userobj);
+                                        
+                                            var tweetobj = {};
+                                                tweetobj['user.loginid'] =  userobj.loginid;
+                                                tweetobj['user.pw'] = userobj.pw;
+                                                
+                                                tweettable.find(tweetobj).toArray(function(err,itres){
+                                            
+                                                        tweettable.find({$and: [tweetobj,{"sentimentscore": {$gt: 0}}]}).count(function(err,ipres){
+                                                        
+                                                          tweettable.find({$and: [tweetobj,{"sentimentscore": {$lt: 0}}]}).count(function(err,inres){
+                                                             
+                                                             tweettable.find({$and:[tweetobj,{"replied": 1}]}).count(function(err,irres){
+                                                                
+                                                              var userdata = {"agentname": userobj.loginid,"agenttotal": itres.length,"agentpositivescore": ipres,"agentnegativescore":inres,"agentrepliedcount": irres };
+                                                              console.log("User: " + userdata);
+                                                              allagents.push(userdata);
+                                                              getagentDetails(i + 1);
+                                                             
+                                                                                 
+                                                                });
+                                                              
+                                                            });
+                                                        });
+                                                    });
+                                                   
+                                                }
+                                                else
+                                                {
+                                                console.log("Agent: " + allagents);
+                                               
+                                                var data = {"total": tres.length,"positivescore": pres,"negativescore":nres,"repliedcount": rres,"agentcount": allagents };
+                                                db.close();
+                                                res.render("agentdetails",data);  
+                                                    
+                                                }
+                                              
+                                            }
+                                
+                                getagentDetails(0);
+                            });
+                    
+                 });
+                  
+            });
+        });
+        
+       
+    });
+      
+       
+  });
+    
+});
+
+app.get("/assigntweets",function(req,res){
+// Get all unassigned tweets and reassign randomly.
+
+   
+   MongoClient.connect(mongourl, function (err, db) {
+      
+      if (err) {
+        console.log('Unable to connect to the mongoDB server. Error:', err);
+      } 
+      
+       var tweettable = db.collection('tweets');
+       var usertable = db.collection('userinfo');
+       
+       tweettable.find({"user":null}).toArray(function(err,result){
+          //Randomly choose user and assign to each tweet and save. 
+           
+           var users = usertable.find({ "role": { $ne :"admin"}}).toArray(function(uerr,uresult){
+           
+           for(var x = 0; x < result.length; x++)
+           {
+               var userobj = randomItem(uresult);
+               result[x]["user"] = userobj;
+               
+               tweettable.update({"id": result[x]["id"]},{ $set: {"user" : result[x]["user"] } }, function(error,update){
+                if(error)
+                {
+                    console.log("Error while updating tweet users ");
+                }
+                
+                console.log("user updated");   
+               });
+           }    
+               
+                db.close();
+                res.send("Unassigned tweets have been reassigned to agents");
+           });
+            
+       });
+       
+   });
+
+
+});
+
 }

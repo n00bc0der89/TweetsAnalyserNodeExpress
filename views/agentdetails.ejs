@@ -5,25 +5,46 @@
    tr > td
     {
       padding-bottom: 0.3em;
+      padding-right:0.6em;
     }
+    
+    #details{
+        display:inline-block;
+        float: right;
+    }
+    
+    #taglist{
+        display:inline-block;
+    }
+     
+     #footer{
+        background-color:black;
+    }
+    
  </style>
 </head>
 <%- include menu.ejs%>
 <body>
-    
-    <div style="float:right">
-            <form action="logout">
-            <input type="submit" id="logout" name="LogOut" value = "LogOut"/>
-            </form>
+
+    <div id="taglist">
+        <h2>Keywords:</h2>
+        <table id="tagstable">
+            <% if(taglist.length > 0) { %>
+            <% for(var x = 0; x < taglist.length; x++ ) { %>
+            <tr>
+                <td><b><a href="#" onclick="return false;"><%=taglist[x]%></a></b></td>    
+            </tr>
+            <% } %>
+            <% } %>
+            
+        </table>
     </div>
-        
-    <h2>Dashboard</h2>
     
-    <div style="border: solid black;height:80%">
+    <div id="details">
     
-    <div style="margin-left:40%"> <h2>Complete Details </h2></div>
+    <div style="margin-left:30%" id="headertext"> <h2>Complete Details </h2></div>
     
-    <table border = 1 style="margin-left:40%">
+    <table border = 1 style="margin-left:30%">
         <tr>
             <td>Total tweets streamed</td>
             <td><%=total%></td>
@@ -46,7 +67,7 @@
         </tr>
     </table>
     
-    <div style="margin-left:40%"> <h2>Agent Details </h2></div>
+    <div style="margin-left:30%" id="agentdet"> <h2>Agent Details </h2></div>
     <% 
     if (agentcount.length > 0) 
     {
@@ -85,5 +106,28 @@
     %>
     </div>
 </body>
-    
+     <%- include footer.ejs%>
 </html>
+
+<script>
+
+  $("#tagstable").on('click','a',function(e){
+    
+    var tagname = e.target.innerHTML;
+    
+        $.ajax(
+            {
+                url: "showagents",
+                data:{"tag":tagname},
+                success: function(pos)
+                   {
+                      $("body").html(pos);
+                      $("#headertext").find("h2").html("Complete Details for keyword : " + tagname);
+                       $("#agentdet").find("h2").html("Agent Details for keyword : " + tagname);
+                       
+                   }
+          });    
+             
+    });
+    
+</script>

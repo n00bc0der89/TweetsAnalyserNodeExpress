@@ -53,9 +53,128 @@ app.get("/admin",function(req,res){
 
 app.get("/showmap",function(req,res){
     
-    res.render("maps"); 
+    MongoClient.connect(mongourl, function (err, db) {
+      
+      if (err) {
+        console.log('Unable to connect to the mongoDB server. Error:', err);
+      } 
+      var tweettable = db.collection('tweets');
+      
+      tweettable.distinct("tag", function(err,result){
+        console.log("Arr: " + result);
+        
+        var data = {"taglist" : result};
+        res.render("maps", data); 
+      });
+      
+    });
+    
+   
     
 });
+
+app.get("/trendingdetails",function(req,res){
+    
+    var tagelem = req.query.tag;
+    var tagobj = {};
+    var totaltags = [];
+    
+    if(tagelem != undefined)    //If clicked from keyword tags pass it to query else send empty obj
+    {
+        tagobj['tag'] = tagelem;
+    }
+    
+    MongoClient.connect(mongourl, function (err, db) {
+      
+          if (err) {
+            console.log('Unable to connect to the mongoDB server. Error:', err);
+          } 
+          var tweettable = db.collection('tweets');
+      
+      //Get all hashtags from tweet and makr it unique
+      
+      if(tagelem != undefined)
+      {
+            tweettable.find(tagobj).toArray(function(err,tres){
+        
+                    var trenddata = {};
+                    var trendarray = [];
+                
+                    for(var i =0 ; i < tres.length; i++)
+                    {
+                        if(tres[i].hashtags.length > 0)
+                        {
+                            for(var k = 0; k < tres[i].hashtags.length; k++)
+                            {
+                                trendarray.push(tres[i].hashtags[k].text);     
+                            }
+                                 
+                        }
+                        
+                    }
+             
+                     var uSet = new Set(trendarray);
+                     trendarray = Array.from(uSet);
+         
+                     function getTrendDetail(t)
+                     {
+                      if(t < trendarray.length)
+                      {
+                          tweettable.find({$and:[tagobj,{"hashtags.text": trendarray[t]}]}).sort({"_id":1}).toArray(function(err,fresult){
+                              //Get count and dates
+                            
+                                  var localdata = {"hashtag" : "#" + trendarray[t],"count": fresult.length,"created_startdate": fresult[0].created_at,"created_enddate": fresult[fresult.length - 1].created_at};
+                                    console.log("Obj: " + JSON.stringify(localdata));
+                                    totaltags.push(localdata);
+                                    getTrendDetail(t + 1);
+                          });
+                          
+                          
+                      }
+                      else{
+                           
+                           tweettable.distinct("tag", function(err,result){
+                               //Logic to display trend tags in descending order of count of hashtags
+                               for(var k=0; k < totaltags.length; k++)
+                                    {
+                                        for(var l =0 ; l < k; l++)
+                                        {
+                                            if(totaltags[l].count < totaltags[k].count)
+                                            {
+                                                var temp = [];
+                                                temp = totaltags[k];
+                                                totaltags[k] = totaltags[l];
+                                                totaltags[l] = temp;
+                                                
+                                            }
+                                        }
+                                    }
+                                
+                                 var data = {"taglist" : result, "tagresults": totaltags};
+                                    db.close();
+                                    res.render("trending", data); 
+                            }); 
+                      }
+                         
+                     }
+                    getTrendDetail(0);
+        
+             });
+          
+              }
+              else
+              {
+                    tweettable.distinct("tag", function(err,result){
+                            var data = {"taglist" : result,"tagresults": []};
+                            db.close();
+                            res.render("trending", data); 
+                          });    
+                  
+              }
+    });
+    
+});
+
 /// ************************************** SSE   *******************************///
  /* app.get("/tweetflow",function(req, res) {
     const client = SSE(req, res,{'retry':10000});
@@ -170,7 +289,7 @@ app.post("/loginaction",function(req,res){
                               }
                               
                                getmessage(tweettable,db,res,req);  
-                               
+                              
                            });
               
                           
@@ -307,7 +426,33 @@ app.get("/refreshTweets",function(req,res){
 app.get("/stopstream",function(req, res) {
     
     stream.stop();
-    res.send("Streaming Stopped for keyword: " + req.session.searchTweet);
+    console.log("Streaming Stopped... ");
+    
+     MongoClient.connect(mongourl, function (err, db) {
+      
+              if (err) {
+                console.log('Unable to connect to the mongoDB server. Error:', err);
+              } 
+               else{
+                   var keyword = db.collection("keyword");
+                   
+                   keyword.insert({"key": req.session.searchTweet,"status":"Streaming stopped for keyword: " + req.session.searchTweet,"datetime":new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''),"entity":"stopped"},function(terr,tresult){
+                       if(terr)
+                       {
+                           console.log(terr);
+                       }
+                       else{
+                       console.log("Status updated for stopped streaming");
+                       db.close();
+                       res.render("index");
+                       }
+                   });
+                   
+               }
+                
+     });
+    
+    
     
 });
 
@@ -322,22 +467,15 @@ app.post('/gettweets',function(req,res){
     
 	if(fromtweet == "true")
 	{
-     // var sanFrancisco = [ '-122.75', '36.8', '-121.75', '37.8' ]
-
+    
        stream = T.stream('statuses/filter', { track: tweet, language: 'en' })
  
-     stream.on('disconnect', function (disconnectMessage) {
-            console.log(disconnectMessage);
-        })
-     
         stream.on('tweet', function (tweet) {
             
-        //var coll = data.statuses;
-          
         var msg = {};
        
             var eachc = tweet;
-          //console.log(JSON.stringify(eachc));
+          console.log(JSON.stringify(eachc));
           
             var obj = {};
             var sentimentpath = '';
@@ -377,7 +515,7 @@ app.post('/gettweets',function(req,res){
                 'tooltip':tooltip,
                 'place':eachc.place,
                 'userlocation':eachc.user.location,
-                    
+                'hashtags': eachc.entities.hashtags   
                 };
             
             geo.find(eachc.user.location, function(err, result){
@@ -402,6 +540,7 @@ app.post('/gettweets',function(req,res){
                     var tweettable = db.collection('tweets');
                     var usertable = db.collection('userinfo');
                     var userlist = [];
+                    var keyword = db.collection("keyword");
                     
                     usertable.find().toArray(function(err,ures){
                         
@@ -418,10 +557,11 @@ app.post('/gettweets',function(req,res){
                         var userobj = randomItem(userlist);
                         
                         obj["user"] = userobj;
+                        obj["tag"] = req.session.searchTweet;
                         
                     //Insert tweet obj      
                     tweettable.insert(obj,function(err,insertres){
-                     //  console.log("Inserted doc"); 
+                      console.log("Inserted doc"); 
                       
                         db.close();
                     });
@@ -436,7 +576,31 @@ app.post('/gettweets',function(req,res){
             });
         
         });
-         res.send("Streaming Started for keyword - " + req.session.searchTweet);
+        
+         MongoClient.connect(mongourl, function (err, db) {
+      
+              if (err) {
+                console.log('Unable to connect to the mongoDB server. Error:', err);
+              } 
+               else{
+                   var keyword = db.collection("keyword");
+                   
+                   keyword.insert({"key": req.session.searchTweet,"status":"Streaming started for keyword: " + req.session.searchTweet,"datetime":new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''),"entity":"started"},function(terr,tresult){
+                       if(terr)
+                       {
+                           console.log(terr);
+                       }
+                       else{
+                       console.log("Status updated for streaming started");
+                       res.render("index");
+                       db.close();
+                       }
+                   });
+                   
+               }
+                
+     });
+         console.log("Streaming Started ...");
         
 	}
 	
@@ -491,6 +655,9 @@ app.get("/logout",function(req,res){
 });
 
 app.get("/callmaps",function(req,res){
+    
+    var tag = req.query.tag;
+    console.log("Tag: " + tag);
    
      MongoClient.connect(mongourl, function (err, db) {
       
@@ -502,7 +669,7 @@ app.get("/callmaps",function(req,res){
                     var tweettable = db.collection('tweets');
                     var geolocation= [];
                     
-                    tweettable.find().toArray(function(err,re){
+                    tweettable.find({"tag":tag}).toArray(function(err,re){
                       var pos = [];
                       for(var k=0; k < re.length; k++)
                       {
@@ -512,6 +679,7 @@ app.get("/callmaps",function(req,res){
                           }
                       }
                         
+                        db.close();
                        res.send(pos);
                          
                       });
@@ -525,6 +693,16 @@ app.get("/callmaps",function(req,res){
 app.get("/showagents",function(req,res){
 // Get all the tweets streamed with each agent tweets assigned and sentiment scores.
 
+var tagelem = req.query.tag;
+console.log("Telem: " + tagelem);
+var tagobj = {};
+
+    if(tagelem != undefined)    //If clicked from keyword tags pass it to query else send empty obj
+    {
+        tagobj['tag'] = tagelem;
+    }
+    
+
   MongoClient.connect(mongourl, function (err, db) {
       
       if (err) {
@@ -535,15 +713,17 @@ app.get("/showagents",function(req,res){
        var usertable = db.collection('userinfo');
        var allagents = [];
        
-      tweettable.find().toArray(function(err,tres){
+      tweettable.find(tagobj).toArray(function(err,tres){
 
-                tweettable.find({"sentimentscore": {$gt: 0}}).count(function(err,pres){
+                tweettable.find({$and:[{"sentimentscore": {$gt: 0}},tagobj]}).count(function(err,pres){
             
-                    tweettable.find({"sentimentscore": {$lt: 0}}).count(function(err,nres){
+                    tweettable.find({$and:[{"sentimentscore": {$lt: 0}},tagobj]}).count(function(err,nres){
                  
-                        tweettable.find({"replied": 1}).count(function(err,rres){
+                        tweettable.find({$and:[{"replied": 1},tagobj]}).count(function(err,rres){
                             
-                            usertable.find({ "role": { $ne :"admin"}}).toArray(function(err,ares){
+                            usertable.find({$and:[{ "role": { $ne :"admin"}}]}).toArray(function(err,ares){
+                                
+                                 tweettable.distinct("tag", function(err,tagres){
                                 
                                 function getagentDetails(i){
                                     
@@ -556,13 +736,13 @@ app.get("/showagents",function(req,res){
                                                 tweetobj['user.loginid'] =  userobj.loginid;
                                                 tweetobj['user.pw'] = userobj.pw;
                                                 
-                                                tweettable.find(tweetobj).toArray(function(err,itres){
+                                                tweettable.find({$and:[tweetobj,tagobj]}).toArray(function(err,itres){
                                             
-                                                        tweettable.find({$and: [tweetobj,{"sentimentscore": {$gt: 0}}]}).count(function(err,ipres){
+                                                        tweettable.find({$and: [tweetobj,{"sentimentscore": {$gt: 0}},tagobj]}).count(function(err,ipres){
                                                         
-                                                          tweettable.find({$and: [tweetobj,{"sentimentscore": {$lt: 0}}]}).count(function(err,inres){
+                                                          tweettable.find({$and: [tweetobj,{"sentimentscore": {$lt: 0}},tagobj]}).count(function(err,inres){
                                                              
-                                                             tweettable.find({$and:[tweetobj,{"replied": 1}]}).count(function(err,irres){
+                                                             tweettable.find({$and:[tweetobj,{"replied": 1},tagobj]}).count(function(err,irres){
                                                                 
                                                               var userdata = {"agentname": userobj.loginid,"agenttotal": itres.length,"agentpositivescore": ipres,"agentnegativescore":inres,"agentrepliedcount": irres };
                                                               console.log("User: " + userdata);
@@ -581,7 +761,7 @@ app.get("/showagents",function(req,res){
                                                 {
                                                 console.log("Agent: " + allagents);
                                                
-                                                var data = {"total": tres.length,"positivescore": pres,"negativescore":nres,"repliedcount": rres,"agentcount": allagents };
+                                                var data = {"total": tres.length,"positivescore": pres,"negativescore":nres,"repliedcount": rres,"agentcount": allagents ,"taglist": tagres};
                                                 db.close();
                                                 res.render("agentdetails",data);  
                                                     
@@ -591,7 +771,7 @@ app.get("/showagents",function(req,res){
                                 
                                 getagentDetails(0);
                             });
-                    
+                        });
                  });
                   
             });
@@ -608,7 +788,8 @@ app.get("/showagents",function(req,res){
 app.get("/assigntweets",function(req,res){
 // Get all unassigned tweets and reassign randomly.
 
-   
+   var keywd = req.query.keywd;
+    
    MongoClient.connect(mongourl, function (err, db) {
       
       if (err) {
@@ -618,11 +799,12 @@ app.get("/assigntweets",function(req,res){
        var tweettable = db.collection('tweets');
        var usertable = db.collection('userinfo');
        
-       tweettable.find({"user":null}).toArray(function(err,result){
+       tweettable.find({$and:[{"user":null},{"tag":keywd}]}).toArray(function(err,result){
           //Randomly choose user and assign to each tweet and save. 
            
            var users = usertable.find({ "role": { $ne :"admin"}}).toArray(function(uerr,uresult){
            
+           console.log("Null : " + result.length);
            for(var x = 0; x < result.length; x++)
            {
                var userobj = randomItem(uresult);
@@ -639,7 +821,7 @@ app.get("/assigntweets",function(req,res){
            }    
                
                 db.close();
-                res.send("Unassigned tweets have been reassigned to agents");
+                res.send(result.length  + " unassigned tweets of keyword " + keywd + " have been reassigned to agents");
            });
             
        });
@@ -649,4 +831,33 @@ app.get("/assigntweets",function(req,res){
 
 });
 
+app.get("/getStatus",function(req,res){
+   
+    MongoClient.connect(mongourl, function (err, db) {
+      
+          if (err) {
+            console.log('Unable to connect to the mongoDB server. Error:', err);
+          } 
+          
+           var keyword = db.collection('keyword');
+           var statusarr = [];
+           keyword.find().sort({"_id":-1}).toArray(function(err,result){
+               
+               if(err)
+               {
+                   console.log(err);
+               }
+               else
+               {
+                   for(var r=0; r < result.length; r++)
+                   {
+                       statusarr.push({"status":result[r].status,"date":result[r].datetime,"key": result[r].key,"entity": result[r].entity});
+                   } 
+                   db.close();
+                   res.send(statusarr);
+               }
+           });
+        });
+    
+});
 }

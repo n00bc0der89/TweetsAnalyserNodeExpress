@@ -9,49 +9,79 @@
     <%- include menu.ejs %>
      <style>
      
+      tr > td
+    {
+      padding-bottom: 0.3em;
+      padding-right:0.6em;
+    }
+    
      #map {
-       height: 85%;
-       width: 95%;
-       margin-top: 10px;
-       margin-left:10px;
-       margin-right:10px;
-       margin-bottom:10px;
+       height: 79%;
+       width: 85%;
+       float:right;
+       display:inline-block;
       }
+     
+      #tags{
+          float:left;
+           display:inline-block;
+           height:100%;
+      }
+      
+      #tweetflag{
+         float:right; 
+         margin-right:10%;
+      }
+      
+       #footer{
+        background-color:black;
+    }
    </style>
-  
-   
-  <body>
-   
-    <div style="float:right">
-            <form action="logout">
-            <input type="submit" id="logout" name="LogOut" value = "LogOut"/>
-            </form>
-        </div>
+  </head>
         
-        
-     <div  style="float:left" id="tweetflag">
+     <div id="tweetflag">
     </div>
     
+    <div id="tags">
+        <h2>Keywords:</h2>
+        <table id="tagstable">
+            <% if(taglist.length > 0) { %>
+            <% for(var x = 0; x < taglist.length; x++ ) { %>
+            <tr>
+                <td><b><a href="#" onclick="return false;"><%=taglist[x]%></a></b></td>    
+            </tr>
+            <% } %>
+            <% } %>
+            
+        </table>
+    </div>
+    <div id="keyword"></div>
     <div id="map"></div>
-   
-  </body>
+  <%- include footer.ejs%>
   </html>
    
-    <script>
+<script>
 
-     $(document).ready(function(){
+    // $(document).ready(function(){
          
-           $.ajax(
+    $("#tagstable").on('click','a',function(e){
+    
+    var tagname = e.target.innerHTML;
+        $.ajax(
             {
                 url: "callmaps",
+                data:{"tag":tagname},
                 success: function(pos)
                    {
                   var visiblehtml = "<img alt='Positive tweets' width='20' height='20' src='http://maps.google.com/mapfiles/ms/icons/green-dot.png'> - Positive Tweets <img alt='Negative tweets' width='20' height='20' src='http://maps.google.com/mapfiles/ms/icons/red-dot.png'> - Negative Tweets";
                   var arr = pos;
                    initMap(arr); 
                    $("#tweetflag").html(visiblehtml);
+                   $("#keyword").html("<h3 style='margin-left:30%'>Sentiments for keyword: "+ tagname  + " </h3>");
                    }
-          });
+          });    
+             
+    });
           
            var map;
         
@@ -106,6 +136,6 @@
             }
           }
           
-        });
+      //  });
          
     </script>

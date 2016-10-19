@@ -5,58 +5,138 @@
          src = "https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     
     <style>
+    
+    div#postres {
+      border: 3px solid #AAA;
+      width: 640px;
+      height:190px;
+      overflow: hidden;
+      position: relative;
+      margin: 0 auto;
+      margin-left:30px;
+      background-color:grey;
+      overflow-y : scroll;
+      overflow-x : hidden;
+    }
+    
+    #det{
+        overflow-y : scroll;
+        overflow-x : hidden;
+    }
+    
     #container
     {
          display: inline-block;
          height:30%;
          width:40%;
+         float:left;
     }
     #postres
     {
-      margin-top:70px;
+     
+      display: inline-block;
     }
+    
+    #taganalysis{
+        height:40%;
+        width:60%;
+        margin-top: 30px;
+        margin-left: 20%;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        /* overflow: hidden; */
+        position: relative;
+    }
+    
+    #footer{
+        background-color:black;
+    }
+    
+    #greenstrip{
+            background: url(Green_Patch.png) no-repeat;
+            height: 15%;
+            position: relative;
+    }
+    
+     #mainstrip{
+        background: url(White-Section.png) no-repeat;
+        height: 13%;
+        width: 60%;
+        margin-left: 20%;
+        position: relative;
+        margin-top: -40;
+        z-index: 1;
+    }
+    
+    #startstreming{
+        margin-left: 40%;
+        margin-top: 30px;
+    }
+    
+    #taganalysis{
+        width: 60%;
+        margin-top:30px;
+        margin-left: 20%;
+    }
+    
+    #tableheader{
+      background-color:cornflowerblue;
+      height:30px;
+      color: white;
+      display: flex;
+    }
+    
+    body{
+        background-color:lavender;
+    }
+    
+    #det tr.spaceUnder > td
+    {
+      padding-bottom: 0.5em;
+    }
+    
     </style>
     
     
     </head>
         <%- include menu.ejs %>
-
-<br/>
-    <body>
-
-         <div style="float:right">
-            <form action="logout">
-            <input type="submit" id="logout" name="LogOut" value = "LogOut"/>
-            </form>
-        </div>
-    
-    <div id="container"  style="border:solid black;">
-    <div style="margin-top:10px">
-        <!--<input type="button" id="clickme" value="Click"/> -->
-
-        <input type="checkbox" id="tweetapi" name="tweetapi" value="true" checked> Twitter Source <br/>
-        <input type="checkbox" id="fbapi" name="fbapi" value="true"> Facebook Source <br/>
-        <br/>
-        Keyword: <input type='text' name='tweetreq' id="tweettext"/>
-        <input type='submit' value='Start Streaming' id="startstream"/>
-        <input type='button' value='Stop Streaming' id="stopstream"/>
-        
-    </div> 
-        
-        <div id="unsassigned" style="margin-top:40px">
-         <input type="button" value="Assign unassigned tweets" id="unassignedtweets"/>
-        </div>
+    <div id="greenstrip"></div>
+    <div id="mainstrip">
+           <table style="margin-top: 25px;position: fixed;">
+               <tr>
+                   <td><label style="margin-left:20px"><b>Select the Social Source</b></label></td>
+                   <td><input type="checkbox" style="margin-left:20px" id="fbapi" name="fbapi" value="true"></td>
+                    <td><img src="FB.png" alt="facebook" height="22" width="22"></td>
+                    <td><label> Facebook </label></td>
+                    <td> <input type="checkbox" style="margin-left:20px" id="tweetapi" name="tweetapi" value="true" checked></td>
+                    <td><img src="Twitt.png" alt="twitter" height="22" width="22"></td>
+                   <td> <label> Twitter </label></td>
+                    <td> <label style="margin-left:60px">Keyword</label> </td>
+                   <td><input type='text' style="margin-left:20px;width: 210px;height:25px;" name='tweetreq' id="tweettext"/></td>
+            </tr>
+       </table>
     </div>
     
-            <div id="postres"></div>
+     
+    <!-- <input type='button' value='Stop Streaming' id="stopstream"/> -->
+        
+    <body>
+           <!-- <div id="postres"></div> -->
+            <div id="startstreming">
+                <input type='submit' value='Start Streaming' id="startstream" style="width: 210px;height:35px;" />
+            </div>
+            
+            <div id="taganalysis">
+                
+            </div>
 
     </body>
-
+ <%- include footer.ejs%>
 </html>
 
     <script type = "text/javascript">
     
-     $('#startstream').click(function(){
+    $('#startstream').click(function(){
        
           $.ajax(
             {
@@ -64,35 +144,74 @@
                 type:"post",
                data: { tweetreq: $("#tweettext").val(), tweetapi : $("#tweetapi").val(), fbapi: $("#fbapi").val()} ,
                 success: function(result){
-                 $("#postres").append(result + "<br/>");
-        }});
-          
-       });
-    
-        $('#stopstream').click(function(){
-       
-          $.ajax(
-            {
-                url: "stopstream",
-                success: function(result){
-                    //alert($("#postres"));
-                   $("#postres").append(result + "<br/>");
+                $("body").html(result);
         }});
           
        });
        
+    $('#taganalysis').click('input[type=button]',function(e){
        
-        $('#unassignedtweets').click(function(){
-       
-          $.ajax(
+        var keyword = e.target;
+        
+        if(keyword.id == "unassignedtweets")
+        {
+           $.ajax(
             {
                 url: "assigntweets",
+                data: {"keywd": keyword.name},
                 success: function(result){
                     //alert($("#postres"));
                    alert(result);
         }});
-          
+        
+        }
+        else if(keyword.id == "stopstream")
+        {
+           $.ajax(
+                {
+                    url: "stopstream",
+                    success: function(result){
+                        //alert($("#postres"));
+                       $("body").html(result);
+                }});
+        }
+        
        });
+       
+  /*  $.ajax(
+            {
+                url: "getStatus",
+                success: function(result){
+                    //alert($("#postres"));
+                    var ht = "";
+                    for(var c=0; c< result.length; c++)
+                    {
+                        ht += result[c].date + "&emsp;&emsp;&emsp;" + result[c].status + "<br/>";
+                    }
+                  $("#postres").html(ht);
+        }}); */
+        
+         $.ajax(
+            {
+                url: "getStatus",
+                success: function(result){
+                    //alert($("#postres"));
+                    var ht = "";
+                     ht = "<div id='tableheader'><label style='margin-left:10px;margin-top:6px'><b>Details</b></label></div><table cellspacing='0' id='det' style='width:100%;border-spacing: 10px;'>";
+                     ht += "<tr><td><b>Date</b></td><td><b>Time</b></td><td><b>Keyword</b></td><td><b>Status</b></td><td><b>Activity</b></td></tr>";
+                    for(var c=0; c< result.length; c++)
+                    {
+                        if(result[c].entity == "started")
+                        {
+                            var datetm = result[c].date.split(' ');
+                            ht += "<tr><td>"+ datetm[0]  +"</td><td>"+ datetm[1] + "</td><td>"+ result[c].key +"</td><td><input type='button' value='Stop' id='stopstream'></td><td><input type='button' value='Assign' id= 'unassignedtweets' name='"+ result[c].key +"' /></td></tr>";
+                    
+                        }
+                    }
+                    
+                  $("#taganalysis").html(ht);
+                  $("#greenstrip").html("<label style='margin-left:35%'><b>" + result[0].status + "</b></label>");
+        }});  
        
      
       </script> 

@@ -5,7 +5,9 @@
      <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCD6FFAPbvxB1-OWHX4iOI-XiCt_FpKBno&libraries=visualization">
     </script>
-    
+    <link rel="stylesheet" type="text/css" href="slick-1.6.0/slick/slick.css"/>
+    <script type="text/javascript" src="slick-1.6.0/slick/slick.js"></script>
+
     <%- include menu.ejs %>
      <style>
      
@@ -16,46 +18,73 @@
     }
     
      #map {
-       height: 79%;
-       width: 85%;
+       height: 70%;
+       width: 100%;
        float:right;
        display:inline-block;
       }
      
       #tags{
-          float:left;
-           display:inline-block;
-           height:100%;
+           background: url(Green_Patch.png) no-repeat;
+           height: 6%;
+           position: relative;
+           width: 100%;
       }
       
       #tweetflag{
          float:right; 
-         margin-right:10%;
+         display:inline-block;
+      }
+      
+      #tagstable{
+          margin-left:5%;
       }
       
        #footer{
         background-color:black;
     }
+    
+    .slick-slide{
+        width: 125;
+        margin-top: 10px;
+    }
+    
+    .slick-prev {
+    left: 100px;
+    background: red; /*to notice it, is white*/
+    }
+    
+    .slick-next {
+        right: 100px;
+        background: red; /*to notice it, is white*/
+    }
+
    </style>
   </head>
-        
+    <div id="tags">
+       <table id="tagstable" style='padding-top:7px'>
+             <tr>
+                 <td><label>Recent Keywords: </label></td>
+                 <section class="slider three">
+                    <% if(taglist.length > 0) { %>
+                    
+                        <% for(var x = 0; x < taglist.length; x++ ) { %>
+               
+                            <td><b><a href="#" onclick="return false;"><%=taglist[x]%></a></b></td>    
+                            <td>|</td>
+                        <% } %>
+                        
+                    <% } %>
+                </section>
+             </tr>
+        </table>
+    </div>  
+   
+   
+    <div id="keyword" style='display: inline-block;width:35%;margin-left:35%'></div>
      <div id="tweetflag">
     </div>
-    
-    <div id="tags">
-        <h2>Keywords:</h2>
-        <table id="tagstable">
-            <% if(taglist.length > 0) { %>
-            <% for(var x = 0; x < taglist.length; x++ ) { %>
-            <tr>
-                <td><b><a href="#" onclick="return false;"><%=taglist[x]%></a></b></td>    
-            </tr>
-            <% } %>
-            <% } %>
-            
-        </table>
-    </div>
-    <div id="keyword"></div>
+   
     <div id="map"></div>
   <%- include footer.ejs%>
   </html>
@@ -64,7 +93,7 @@
 
     // $(document).ready(function(){
          
-    $("#tagstable").on('click','a',function(e){
+    $("#tags").on('click','a',function(e){
     
     var tagname = e.target.innerHTML;
         $.ajax(
@@ -77,7 +106,7 @@
                   var arr = pos;
                    initMap(arr); 
                    $("#tweetflag").html(visiblehtml);
-                   $("#keyword").html("<h3 style='margin-left:30%'>Sentiments for keyword: "+ tagname  + " </h3>");
+                   $("#keyword").html("<label><b>Sentiments for keyword: "+ tagname  + " </b></label>");
                    }
           });    
              
@@ -88,7 +117,7 @@
           function initMap(dataarray) {
                       
             map = new google.maps.Map(document.getElementById('map'), {
-              zoom: 4,
+              zoom: 3,
               center: {lat: 23.6421398, lng: 79.0239249}
             });
             
@@ -137,5 +166,30 @@
           }
           
       //  });
+      
+        $(".slider.three").slick({
+            accessibility: true,
+            adaptiveHeight: true,
+            slidesToShow: 5,
+            slidesToScroll: 1,
+            infinite: true,
+            mobileFirst: true,
+            arrows: true,
+            asNavFor: null,
+            infinite: false,
+            initialSlide: 0,
+            cssEase:'ease',
+            useCss:true,
+            variableWidth: true,
+            rows: 1,
+            prevArrow: $("#prev"),
+            nextArrow: $("#next"),
+            responsive: [{
+                breakpoint: 500,
+                settings: {
+                    slidesToShow: 5
+                }
+            }]
+        });
          
     </script>

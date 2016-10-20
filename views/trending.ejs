@@ -9,14 +9,24 @@
     }
     
     #details{
-        display:inline-block;
-        margin-left: 10%;
+        margin-left: 20%;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        /* overflow: hidden; */
+        position: relative;
+        height:63%;
     }
     
-    #taglist{
-        display:inline-block;
-        float:left;
+   #taglist{
+         background: url(Green_Patch.png) no-repeat;
+           height: 6%;
+           position: relative;
+           width: 100%;
     }
+    
+     #tagstable{
+          margin-left:5%;
+      }
     
     #footer{
         background-color:black;
@@ -27,16 +37,21 @@
 <body>
     
     <div id="taglist">
-        <h2>Keywords:</h2>
-        <table id="tagstable">
-            <% if(taglist.length > 0) { %>
-            <% for(var x = 0; x < taglist.length; x++ ) { %>
-            <tr>
-                <td><b><a href="#" onclick="return false;"><%=taglist[x]%></a></b></td>    
-            </tr>
-            <% } %>
-            <% } %>
-            
+        <table id="tagstable" style='padding-top:7px'>
+             <tr>
+                 <td><label>Recent Keywords: </label></td>
+                 <section class="slider three">
+                    <% if(taglist.length > 0) { %>
+                    
+                        <% for(var x = 0; x < taglist.length; x++ ) { %>
+               
+                            <td><b><a href="#" onclick="return false;"><%=taglist[x]%></a></b></td>    
+                            <td>|</td>
+                        <% } %>
+                        
+                    <% } %>
+                </section>
+             </tr>
         </table>
     </div>
     

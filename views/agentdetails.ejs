@@ -10,12 +10,19 @@
     
     #details{
         display:inline-block;
-        float: right;
+        float: none;
     }
     
     #taglist{
-        display:inline-block;
+         background: url(Green_Patch.png) no-repeat;
+           height: 6%;
+           position: relative;
+           width: 100%;
     }
+    
+     #tagstable{
+          margin-left:5%;
+      }
      
      #footer{
         background-color:black;
@@ -27,24 +34,29 @@
 <body>
 
     <div id="taglist">
-        <h2>Keywords:</h2>
-        <table id="tagstable">
-            <% if(taglist.length > 0) { %>
-            <% for(var x = 0; x < taglist.length; x++ ) { %>
-            <tr>
-                <td><b><a href="#" onclick="return false;"><%=taglist[x]%></a></b></td>    
-            </tr>
-            <% } %>
-            <% } %>
-            
+        <table id="tagstable" style='padding-top:7px'>
+             <tr>
+                 <td><label>Recent Keywords: </label></td>
+                 <section class="slider three">
+                    <% if(taglist.length > 0) { %>
+                    
+                        <% for(var x = 0; x < taglist.length; x++ ) { %>
+               
+                            <td><b><a href="#" onclick="return false;"><%=taglist[x]%></a></b></td>    
+                            <td>|</td>
+                        <% } %>
+                        
+                    <% } %>
+                </section>
+             </tr>
         </table>
     </div>
     
     <div id="details">
     
-    <div style="margin-left:30%" id="headertext"> <h2>Complete Details </h2></div>
+    <div style="margin-left:44%" id="headertext"> <h2>Complete Details </h2></div>
     
-    <table border = 1 style="margin-left:30%">
+    <table border = 1 style="margin-left:44%">
         <tr>
             <td>Total tweets streamed</td>
             <td><%=total%></td>
@@ -67,7 +79,7 @@
         </tr>
     </table>
     
-    <div style="margin-left:30%" id="agentdet"> <h2>Agent Details </h2></div>
+    <div style="margin-left:44%" id="agentdet"> <h2>Agent Details </h2></div>
     <% 
     if (agentcount.length > 0) 
     {

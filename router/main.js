@@ -4,8 +4,7 @@ var randomItem = require("random-item");
 var session = require('client-sessions');
 var geocoder = require("google-geocoder");
 var http = require('http');
-//var SSE = require("sse-nodejs");
-//var SSE = require("sse-node");
+
 var serverSent = "";
 // *********** Routing Logic Here ************** //
 var MongoClient ="";
